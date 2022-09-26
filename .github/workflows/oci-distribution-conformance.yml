@@ -1,0 +1,33 @@
+name: oci-distribution-conformance
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * *'
+  deployment_status:
+
+jobs:
+  run:
+    if: ${{github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run OCI Distribution Spec conformance tests
+        uses: opencontainers/distribution-spec@main
+        env:
+          OCI_ROOT_URL: ${{ secrets.OCI_ROOT_URL }}
+          OCI_NAMESPACE: ${{ secrets.OCI_NAMESPACE }}
+          OCI_CROSSMOUNT_NAMESPACE: ${{ secrets.OCI_CROSSMOUNT_NAMESPACE }}
+          OCI_USERNAME: ${{ secrets.OCI_CONFORMANCE_USER }}
+          OCI_PASSWORD: ${{ secrets.OCI_CONFORMANCE_PAT }}
+          OCI_TEST_PULL: 1
+          OCI_TEST_PUSH: 1
+          OCI_TEST_CONTENT_DISCOVERY: 1
+          OCI_TEST_CONTENT_MANAGEMENT: 0
+          OCI_DEBUG: 0
+      - run: mkdir -p .out/ && mv {report.html,junit.xml} .out/
+        if: always()
+      - name: Upload test results zip as build artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: oci-test-results-${{ github.sha }}
+          path: .out/
+        if: always()
